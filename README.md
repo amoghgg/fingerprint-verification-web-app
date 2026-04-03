@@ -1,118 +1,55 @@
-# 🔐 Fingerprint Verification Web App
+# Fingerprint Verification Web App
 
-This web application simulates a complete fingerprint **enrollment and verification** system using the **device camera** (front or back). It supports **real-time thumb detection**, automatic image enhancement using **OpenCV.js**, and integration with the **BioPass ID API** for production-level fingerprint authentication.
+A browser-based fingerprint enrollment and verification system that runs entirely from the device camera — no hardware scanner required. Uses TensorFlow.js for real-time thumb detection, OpenCV.js for image enhancement in-browser, and integrates with the BioPass ID API for production-level fingerprint matching.
 
----
+Built and tested on iPhone 13 front camera. Works on desktop webcam as well.
 
-## 🚀 Features
+## How it works
 
-- 📷 Live camera feed with real-time preview
-- 🤏 Automatic thumb detection using TensorFlow.js Handpose
-- 🖐️ Manual capture via button or spacebar
-- 🧠 Image enhancement (CLAHE + sharpening) via OpenCV.js
-- 📲 Front-camera compatibility for mobile devices (tested on iPhone 13)
-- 🔐 Seamless integration with BioPass production API
-- 🧪 Enroll and Verify modes with real-time feedback
-- 🧾 JSON payloads constructed dynamically with unique CustomID
-- 📊 Verification results with matching outcome and efficiency scores
-- 📦 Local testing support without external hardware (no MFS110)
+1. User opens the app on any device with a camera
+2. TensorFlow.js Handpose model detects when a thumb is held up to the camera
+3. App auto-captures the frame (or user captures manually via button or spacebar)
+4. OpenCV.js applies CLAHE contrast enhancement and sharpening in-browser — no server round-trip for image processing
+5. Enhanced image is base64-encoded and sent to the Django backend
+6. Backend forwards to BioPass ID API in either **Enroll** or **Verify** mode
+7. Verification result is returned with match outcome and efficiency score
 
----
+## Features
 
-## 🧪 Workflow
+- Real-time thumb detection via TensorFlow.js Handpose
+- Auto-capture on thumb detection or manual capture
+- In-browser image enhancement (CLAHE + sharpening) via OpenCV.js
+- Enroll and Verify modes with distinct flows
+- Front-camera support for mobile
+- Works without fingerprint hardware (no MFS110 sensor required)
+- JSON payloads with unique CustomID per user
 
-1. **User shows thumb in camera** (front/back)
-2. App detects thumb and auto-captures OR user captures manually
-3. Image is enhanced in-browser using OpenCV
-4. Base64 image is sent to Django backend with user name and mode
-5. Backend hits BioPass API to either enroll or verify
-6. API response is displayed with match results and confidence
+## Stack
 
----
+| | |
+|---|---|
+| Frontend | HTML, JavaScript, TensorFlow.js, OpenCV.js |
+| Backend | Django, Django REST Framework |
+| Biometric API | BioPass ID |
+| Transport | Base64 over REST |
 
-## ⚙️ Tech Stack
+## Running locally
 
-**Frontend**  
-- HTML + JavaScript  
-- TensorFlow.js  
-- OpenCV.js  
+```bash
+cd backend
+pip install -r requirements.txt
+python manage.py runserver
+```
 
-**Backend**  
-- Django (Python)  
-- REST API via `requests`  
-- Local dev server (127.0.0.1:8000)
+Open `frontend/index.html` in a browser (or serve it via the Django static files setup).
 
-**External Service**  
-- [BioPassID Production API](https://docs.biopassid.com)
+For production use, configure your BioPass ID API credentials in the Django settings:
 
----
+```
+BIOPASS_API_URL=https://...
+BIOPASS_API_KEY=your_key
+```
 
-## 📁 Folder Structure
+## Notes on accuracy
 
-Fingerprint-Verification-Web-App/
-│
-├── frontend/
-│ ├── index.html # UI with camera, form, buttons
-│ ├── script.js # Logic for capture, detection, and API calls
-│ ├── thumb-demo.png # Instructional thumb image
-│
-├── backend/
-│ ├── amoghfp/
-│ │ └── amoghfpapp/
-│ │ └── views.py # Django view for /verify-fingerprint/
-│ └── manage.py
-│
-├── payload.json # For curl or Postman testing
-
-
----
-
-## 🧾 API Payload Example
-
-```json
-{
-  "Person": {
-    "CustomID": "amogh_20250630_1742",
-    "Fingers": [
-      {
-        "Finger-1": "<base64-string>"
-      }
-    ]
-  }
-}
-## Response Sample
-{
-  "Person": {
-    "CustomID": "amogh_20250630_1742",
-    "Match": true,
-    "MatchDetails": {
-      "NonMatchedFingers": ["Finger-2", "Finger-3", ...],
-      "FaceMatched": false
-    }
-  },
-  "Success": true
-}
-📸 Image Capture Tips
-Use proper lighting with no glare
-
-Place thumb clearly in front of camera
-
-Avoid blur: hold steady for 1–2 seconds
-
-Use a macro lens attachment (₹300) for best clarity
-
-🔐 Notes
-Fingerprint matching accuracy depends heavily on image quality
-
-External fingerprint scanners like MFS110 are not used
-
-All fingerprint minutiae are extracted via the BioPassID API from the captured photo
-
-Real-time matching may succeed even for noisy inputs – enhancement in progress
-
-👨‍💻 Author
-Amogh Bajpai
-Product Development Intern @ Innovatiview
-GitHub: @amoghgg
-LinkedIn: linkedin.com/in/amogh-bajpai
-
+Camera-based fingerprint capture is not equivalent to optical or capacitive sensor capture in terms of minutiae extraction accuracy. This system is designed for scenarios where dedicated hardware isn't available — it works well for low-to-medium security use cases and as a proof of concept for browser-native biometrics.
