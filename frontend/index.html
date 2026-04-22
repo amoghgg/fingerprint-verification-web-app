@@ -3,72 +3,146 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fingerprint Verification</title>
-  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady()" type="text/javascript"></script>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      background: #f4f6f9;
-      margin: 0;
-      padding: 2rem;
-      text-align: center;
-    }
-
-    .container {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 500px;
-      margin: auto;
-    }
-
-    video, canvas, img {
-      width: 100%;
-      border-radius: 10px;
-      margin-top: 1rem;
-    }
-
-    input, select, button {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      margin: 0.5rem 0;
-      width: 100%;
-    }
-
-    button {
-      background-color: #1e88e5;
-      color: white;
-      border: none;
-    }
-
-    pre {
-      background: #f1f1f1;
-      padding: 1rem;
-      border-radius: 6px;
-      text-align: left;
-      overflow-x: auto;
-      white-space: pre-wrap;
-    }
-  </style>
+  <title>BioVerify — Fingerprint System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Fingerprint Capture</h1>
-    <input type="text" id="user-name" placeholder="Enter your name" />
-    <select id="mode">
-      <option value="enroll">Enroll</option>
-      <option value="verify">Verify</option>
-    </select>
-    <video id="camera" autoplay playsinline></video>
-    <canvas id="canvas" style="display: none;"></canvas>
-    <img id="preview" style="display: none;" />
-    <button id="capture-btn">📷 Capture</button>
-    <button id="send-btn" style="display: none;">🚀 Send to Server</button>
-    <pre id="response"></pre>
-  </div>
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div id="particles" aria-hidden="true"></div>
+
+  <main class="container">
+
+    <!-- ── Header ──────────────────────────────────────────────── -->
+    <header class="header">
+      <div class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="24" cy="24" r="14" stroke="currentColor" stroke-width="1.2"/>
+          <circle cx="24" cy="24" r="8"  stroke="currentColor" stroke-width="1"/>
+          <circle cx="24" cy="24" r="2.5" fill="currentColor"/>
+          <path d="M 4 24 A 20 20 0 0 1 24 4" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.6"/>
+          <path d="M 10 24 A 14 14 0 0 1 24 10" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 4" opacity="0.5"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1>BioVerify</h1>
+        <p class="tagline">Fingerprint Identification System</p>
+      </div>
+    </header>
+
+    <!-- ── Setup Card ───────────────────────────────────────────── -->
+    <div class="glass-card setup-card">
+      <div class="field-group">
+        <label for="user-name" class="field-label">Subject ID</label>
+        <input
+          type="text"
+          id="user-name"
+          class="field-input"
+          placeholder="e.g. john_doe or EMP-0042"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <div class="mode-switch">
+        <button class="mode-btn active" data-mode="enroll" id="btn-enroll">
+          <span class="mode-icon">
+            <svg viewBox="0 0 16 16" fill="none" width="15" height="15">
+              <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Enroll
+        </button>
+        <button class="mode-btn" data-mode="verify" id="btn-verify">
+          <span class="mode-icon">
+            <svg viewBox="0 0 16 16" fill="none" width="15" height="15">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M5.5 8.5l2 2 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Verify
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Scanner ──────────────────────────────────────────────── -->
+    <section class="scanner-section" aria-label="Fingerprint scanner">
+      <div class="scanner-surround">
+        <div class="scanner-frame" id="scanner-frame">
+          <video id="camera" autoplay playsinline muted></video>
+          <canvas id="canvas" aria-hidden="true"></canvas>
+          <img id="preview" alt="Captured fingerprint" />
+
+          <div class="scan-beam" id="scan-beam" aria-hidden="true"></div>
+
+          <div class="scan-overlay" aria-hidden="true">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+          </div>
+
+          <div class="status-badge" role="status" aria-live="polite">
+            <span class="badge-dot" id="badge-dot"></span>
+            <span id="badge-label">Starting…</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="quality-row" aria-label="Image quality">
+        <span class="quality-label">Quality</span>
+        <div class="quality-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="quality-fill" id="quality-fill"></div>
+        </div>
+        <span class="quality-pct" id="quality-pct">—</span>
+      </div>
+    </section>
+
+    <!-- ── Capture Button ───────────────────────────────────────── -->
+    <div class="action-row">
+      <button id="capture-btn" class="btn btn-primary" disabled aria-label="Capture fingerprint">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="4" fill="currentColor"/>
+        </svg>
+        Capture Fingerprint
+      </button>
+    </div>
+
+    <!-- ── Result Panel ──────────────────────────────────────────── -->
+    <div class="result-panel" id="result-panel" role="region" aria-label="Verification result" aria-live="polite">
+      <div class="result-icon-wrap" id="result-icon-wrap" aria-hidden="true"></div>
+      <h2 class="result-title" id="result-title"></h2>
+
+      <div class="score-ring-wrap" id="score-ring-wrap" aria-hidden="true">
+        <svg class="score-svg" viewBox="0 0 140 140" aria-hidden="true">
+          <circle class="score-track" cx="70" cy="70" r="56"/>
+          <circle class="score-arc"   id="score-arc" cx="70" cy="70" r="56"/>
+        </svg>
+        <div class="score-inner">
+          <span class="score-num" id="score-num">0</span>
+          <span class="score-unit">% match</span>
+        </div>
+      </div>
+
+      <p class="result-detail" id="result-detail"></p>
+
+      <button class="btn btn-ghost" id="retry-btn">
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true">
+          <path d="M2 8a6 6 0 1 1 1.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12V8h4"             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Scan Again
+      </button>
+    </div>
+
+    <!-- ── Log Strip ─────────────────────────────────────────────── -->
+    <div class="log-strip" id="log-strip" role="log" aria-label="Activity log" aria-live="off"></div>
+
+  </main>
+
   <script src="script.js"></script>
 </body>
 </html>
